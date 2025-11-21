@@ -1,26 +1,211 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Primary Navy Palette */
+  --navy-950: #0A1628;
+  --navy-900: #0F172A;
+  --navy-800: #1E293B;
+  --navy-700: #334155;
+  --navy-600: #475569;
+  --navy-500: #64748B;
+
+  /* Accent Gold Palette */
+  --gold-600: #D4AF37;
+  --gold-500: #EAC54F;
+  --gold-400: #F4D03F;
+  --gold-300: #F9E79F;
+
+  /* Semantic Colors */
+  --success: #10B981;
+  --success-light: #D1FAE5;
+  --warning: #F59E0B;
+  --warning-light: #FEF3C7;
+  --info: #3B82F6;
+  --info-light: #DBEAFE;
+  --error: #EF4444;
+  --error-light: #FEE2E2;
+
+  /* Neutral Grays */
+  --slate-50: #F8FAFC;
+  --slate-100: #F1F5F9;
+  --slate-200: #E2E8F0;
+  --slate-300: #CBD5E1;
+  --slate-700: #334155;
+  --slate-800: #1E293B;
+  --slate-900: #0F172A;
+
+  /* Theme Variables - Light Mode */
+  --background: var(--slate-50);
+  --foreground: var(--navy-950);
+  --card-bg: #ffffff;
+  --card-border: var(--slate-200);
+  --text-primary: var(--slate-900);
+  --text-secondary: var(--slate-700);
+  --text-muted: var(--slate-500);
+  --accent: var(--gold-600);
+  --accent-hover: var(--gold-500);
+  --border: var(--slate-200);
+
+  /* Legacy variables for backward compatibility - Light */
+  --bg-paper: #FDFBF7;
+  --bg-surface: #FFFFFF;
+  --bg-navy: #0F172A;
+  --text-white: #F8FAFC;
+  --border-color: #e2e8f0;
+  --accent-gold: #D4AF37;
+
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.03);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+[data-theme="dark"] {
+  /* Theme Variables - Dark Mode */
+  --background: var(--navy-950);
+  --foreground: var(--slate-100);
+  --card-bg: var(--navy-900);
+  --card-border: var(--navy-800);
+  --text-primary: var(--slate-100);
+  --text-secondary: var(--slate-300);
+  --text-muted: var(--slate-500);
+  --accent: var(--gold-500);
+  --accent-hover: var(--gold-400);
+  --border: var(--navy-800);
+
+  /* Legacy variables for backward compatibility - Dark */
+  --bg-paper: #0a0a0a;
+  --bg-surface: #1a1a1a;
+  --bg-navy: #1E293B;
+  --text-white: #F8FAFC;
+  --border-color: #334155;
+  --accent-gold: #F4D03F;
+
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.05);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui;
+  --font-serif: var(--font-merriweather), ui-serif, Georgia;
+  --font-display: var(--font-playfair), ui-serif, Georgia;
+
+  --color-paper: var(--bg-paper);
+  --color-surface: var(--bg-surface);
+  --color-navy: var(--bg-navy);
+  --color-gold: var(--accent-gold);
+  --color-gold-light: rgba(212, 175, 55, 0.1);
+  --color-border: var(--border-color);
+}
+
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--background);
+  color: var(--text-primary);
+}
+
+/* Utility Classes */
+.text-navy {
+  color: var(--navy-900);
+}
+
+[data-theme="dark"] .text-navy {
+  color: var(--slate-100);
+}
+
+.text-gold {
+  color: var(--gold-600);
+}
+
+[data-theme="dark"] .text-gold {
+  color: var(--gold-500);
+}
+
+.bg-paper {
+  background-color: var(--bg-paper);
+}
+
+.bg-surface {
+  background-color: var(--bg-surface);
+}
+
+/* Print Styles */
+@media print {
+  @page {
+    margin: 1.5cm;
+    size: A4;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print\:text-base {
+    font-size: 11pt !important;
+  }
+
+  .print\:text-xl {
+    font-size: 16pt !important;
+  }
+
+  .print\:text-3xl {
+    font-size: 20pt !important;
+  }
+
+  .print\:leading-loose {
+    line-height: 1.8 !important;
+  }
+
+  .print\:mb-4 {
+    margin-bottom: 1rem !important;
+  }
+
+  .print\:mt-6 {
+    margin-top: 1.5rem !important;
+  }
+
+  .print\:mb-3 {
+    margin-bottom: 0.75rem !important;
+  }
+
+  .print\:text-black {
+    color: black !important;
+  }
+
+  .print\:bg-gray-100 {
+    background-color: #f3f4f6 !important;
+  }
+
+  .print\:text-xs {
+    font-size: 9pt !important;
+  }
+
+  /* Avoid page breaks inside elements */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    page-break-after: avoid;
+    page-break-inside: avoid;
+  }
+
+  p {
+    page-break-inside: avoid;
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Ensure images don't overflow */
+  img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
 }
