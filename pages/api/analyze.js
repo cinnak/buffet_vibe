@@ -1,9 +1,11 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+// Zhipu AI (GLM) API for text analysis
+// API Key format: `id.secret` (get from https://open.bigmodel.cn/)
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const API_KEY = process.env.ZHIPU_API_KEY;
+const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 
 export default async function handler(req, res) {
-  // Enable CORS for Vercel
+  // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
@@ -18,12 +20,12 @@ export default async function handler(req, res) {
   }
 
   // Check if API key is configured
-  if (!process.env.GEMINI_API_KEY) {
-    console.error('GEMINI_API_KEY is not configured');
-    return res.status(500).json({ message: 'API configuration error' });
+  if (!API_KEY) {
+    console.error('ZHIPU_API_KEY is not configured');
+    return res.status(500).json({ message: 'API configuration error - ZHIPU_API_KEY not set' });
   }
 
-  // Ensure body is an object even if parsing fails (e.g., raw string)
+  // Parse request body
   let body = req.body;
   if (typeof body === 'string') {
     try {
@@ -39,67 +41,91 @@ export default async function handler(req, res) {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const prompt = `You are an expert linguist and value investor, acting as a tutor for a Chinese student learning from Warren Buffett's shareholder letters.
 
-    const prompt = `
-      You are an expert linguist and value investor, acting as a tutor for a Chinese student learning from Warren Buffett's shareholder letters.
+Your task is to analyze the following excerpt from a shareholder letter.
+Target Audience Proficiency: ${proficiency}
 
-      Your task is to analyze the following excerpt from a shareholder letter.
-      Target Audience Proficiency: ${proficiency}
+Excerpt: "${selectedText}"
 
-      Excerpt: "${selectedText}"
+Provide the analysis in strictly valid JSON format with the following structure:
+{
+  "LanguageLab": [
+    {
+      "term": "Word or Phrase",
+      "type": "Idiom/Verb/Noun/Expression",
+      "definition_cn": "Chinese definition",
+      "example": "Example sentence (IELTS style if applicable)"
+    }
+  ],
+  "Rhetoric": {
+    "technique": "Rhetorical device used (e.g., Irony, Metaphor)",
+    "tone": "Tone of the excerpt (e.g., Deadpan Humor, Cautious)",
+    "analysis_cn": "Detailed analysis in Chinese explaining *how* the technique/tone is used and its effect."
+  },
+  "Wisdom": {
+    "concept": "Key investment or business concept (e.g., Moat, Float)",
+    "explanation_cn": "Deep explanation of the concept in Chinese, connecting it to the excerpt and Buffett's philosophy."
+  }
+}
 
-      Provide the analysis in strictly valid JSON format with the following structure:
-      {
-        "LanguageLab": [
+Constraints:
+- Output MUST be valid JSON.
+- All explanations (definition_cn, analysis_cn, explanation_cn) MUST be in Chinese.
+- For "Beginner", keep Chinese explanations simple and direct.
+- For "Advanced", provide deeper nuance and context in the Chinese explanations.
+- If the text is short, focus on the specific words. If it's long, focus on the overall message.`;
+
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'glm-4-flash', // Fast and cost-effective model
+        messages: [
           {
-            "term": "Word or Phrase",
-            "type": "Idiom/Verb/Noun/Expression",
-            "definition_cn": "Chinese definition",
-            "example": "Example sentence (IELTS style if applicable)"
+            role: 'user',
+            content: prompt
           }
         ],
-        "Rhetoric": {
-          "technique": "Rhetorical device used (e.g., Irony, Metaphor)",
-          "tone": "Tone of the excerpt (e.g., Deadpan Humor, Cautious)",
-          "analysis_cn": "Detailed analysis in Chinese explaining *how* the technique/tone is used and its effect."
-        },
-        "Wisdom": {
-          "concept": "Key investment or business concept (e.g., Moat, Float)",
-          "explanation_cn": "Deep explanation of the concept in Chinese, connecting it to the excerpt and Buffett's philosophy."
-        }
-      }
+        temperature: 0.7,
+        max_tokens: 2000
+      })
+    });
 
-      Constraints:
-      - Output MUST be valid JSON.
-      - All explanations (definition_cn, analysis_cn, explanation_cn) MUST be in Chinese.
-      - For "Beginner", keep Chinese explanations simple and direct.
-      - For "Advanced", provide deeper nuance and context in the Chinese explanations.
-      - If the text is short, focus on the specific words. If it's long, focus on the overall message.
-    `;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    // Clean up markdown code blocks if present
-    const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
-
-    let data;
-    try {
-      data = JSON.parse(jsonStr);
-    } catch (parseErr) {
-      console.error('Failed to parse Gemini response JSON:', parseErr);
-      console.error('Response text:', text.substring(0, 500));
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Zhipu API Error:', response.status, errorText);
       return res.status(500).json({
-        message: 'Invalid response format from Gemini API',
-        rawResponse: text.substring(0, 500)
+        message: 'Zhipu API error',
+        status: response.status,
+        error: errorText
       });
     }
 
-    res.status(200).json(data);
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content || '';
+
+    // Clean up markdown code blocks if present
+    const jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim();
+
+    let parsedData;
+    try {
+      parsedData = JSON.parse(jsonStr);
+    } catch (parseErr) {
+      console.error('Failed to parse Zhipu response JSON:', parseErr);
+      console.error('Response text:', content.substring(0, 500));
+      return res.status(500).json({
+        message: 'Invalid response format from Zhipu API',
+        rawResponse: content.substring(0, 500)
+      });
+    }
+
+    res.status(200).json(parsedData);
   } catch (error) {
-    console.error('Gemini API Error:', error);
+    console.error('Zhipu API Error:', error);
     res.status(500).json({
       message: 'Error analyzing text',
       error: error.message,
