@@ -8,6 +8,7 @@ import AnalysisPanel from '@/components/AnalysisPanel';
 import ReadingControls from '@/components/ReadingControls';
 import ReadingAnalytics from '@/components/ReadingAnalytics';
 import ResumeReadingBanner from '@/components/ResumeReadingBanner';
+import VocabularyModal from '@/components/VocabularyModal';
 import { getAllLetterIds, getLetterData, getArchiveStructure } from '@/lib/letters';
 import { calculateReadingTime } from '@/lib/textUtils';
 import { getProgress, saveProgress, clearProgress } from '@/lib/storage/readingProgressStorage';
@@ -25,6 +26,9 @@ export default function LetterPage({ letterData, archiveData, theme, setTheme })
     const [savedProgress, setSavedProgress] = useState(null);
     const [showResumeBanner, setShowResumeBanner] = useState(false);
     const [dismissedResume, setDismissedResume] = useState(false);
+
+    // Vocabulary state
+    const [isVocabOpen, setIsVocabOpen] = useState(false);
 
     // Get highlight term from URL query parameter
     const highlightTerm = router.query.highlight || null;
@@ -241,9 +245,13 @@ export default function LetterPage({ letterData, archiveData, theme, setTheme })
                         analysis={analysis}
                         isLoading={isLoading}
                         error={error}
+                        currentYear={letterData.year}
                     />
                 </div>
             </main>
+
+            {/* Vocabulary Modal */}
+            <VocabularyModal isOpen={isVocabOpen} onClose={() => setIsVocabOpen(false)} />
         </div>
     );
 }

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Languages, Feather, Lightbulb, ThumbsUp, ThumbsDown, Cpu, Bookmark, Copy, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
+import VocabularyButton from './VocabularyButton';
 
-export default function AnalysisPanel({ analysis, isLoading, proficiency, setProficiency, error }) {
+export default function AnalysisPanel({ analysis, isLoading, proficiency, setProficiency, error, currentYear }) {
     const [isSaved, setIsSaved] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
 
@@ -154,10 +155,23 @@ ${analysis.Wisdom?.explanation_cn}
                         </div>
                         <div className="space-y-4">
                             {analysis.LanguageLab?.map((item, idx) => (
-                                <div key={idx}>
-                                    <div className="flex justify-between items-baseline mb-1">
-                                        <span className="text-lg font-bold text-white">{item.term}</span>
-                                        <span className="text-xs bg-gold/20 text-gold px-2 py-0.5 rounded uppercase">{item.type}</span>
+                                <div key={idx} className="group">
+                                    <div className="flex justify-between items-start gap-3 mb-1">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-lg font-bold text-white">{item.term}</span>
+                                                <span className="text-xs bg-gold/20 text-gold px-2 py-0.5 rounded uppercase">{item.type}</span>
+                                            </div>
+                                        </div>
+                                        <VocabularyButton
+                                            wordData={{
+                                                term: item.term,
+                                                type: item.type,
+                                                definition_cn: item.definition_cn,
+                                                example: item.example,
+                                                sourceLetter: currentYear
+                                            }}
+                                        />
                                     </div>
                                     <p className="text-slate-300 text-sm mb-2">{item.definition_cn}</p>
                                     {item.example && (

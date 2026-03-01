@@ -1,15 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { BookOpen, Archive, ChevronDown, Bookmark, Search } from 'lucide-react';
+import { BookOpen, Archive, ChevronDown, Bookmark, Search, BookText } from 'lucide-react';
 import ArchivePopover from './ArchivePopover';
 import ThemeToggle from './ThemeToggle';
 import SavedAnalysesModal from './SavedAnalysesModal';
 import SearchModal from './SearchModal';
+import VocabularyModal from './VocabularyModal';
+import { getVocabularyCount } from '@/lib/storage/vocabularyStorage';
 
 export default function Header({ archiveData, theme, setTheme }) {
     const [isArchiveOpen, setIsArchiveOpen] = useState(false);
     const [isSavedOpen, setIsSavedOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [isVocabOpen, setIsVocabOpen] = useState(false);
+    const [vocabCount, setVocabCount] = useState(0);
+
+    // Update vocabulary count periodically
+    useEffect(() => {
+        const updateCount = () => setVocabCount(getVocabularyCount());
+        updateCount();
+        const interval = setInterval(updateCount, 5000);
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <>
@@ -57,6 +69,19 @@ export default function Header({ archiveData, theme, setTheme }) {
                         <Bookmark className="w-4 h-4" />
                         <span>Saved</span>
                     </button>
+
+                    <button
+                        onClick={() => setIsVocabOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+                    >
+                        <BookText className="w-4 h-4" />
+                        <span>Vocabulary</span>
+                        {vocabCount > 0 && (
+                            <span className="ml-1 px-1.5 py-0.5 bg-amber-500 text-white text-xs rounded-full">
+                                {vocabCount}
+                            </span>
+                        )}
+                    </button>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -70,6 +95,7 @@ export default function Header({ archiveData, theme, setTheme }) {
 
             <SavedAnalysesModal isOpen={isSavedOpen} onClose={() => setIsSavedOpen(false)} />
             <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+            <VocabularyModal isOpen={isVocabOpen} onClose={() => setIsVocabOpen(false)} />
         </>
     );
 }
