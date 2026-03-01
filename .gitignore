@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# cached letter PDFs (source files, not needed for deployment)
+letters/*.pdf
+data/letters.json.bak
