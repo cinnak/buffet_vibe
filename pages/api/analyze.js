@@ -1,8 +1,8 @@
-// Zhipu AI (GLM) API for text analysis
-// API Key format: `id.secret` (get from https://open.bigmodel.cn/)
+// Volcengine (火山引擎) DeepSeek API for text analysis
+// API Key format: UUID (get from https://ark.cn-beijing.volces.com/)
 
-const API_KEY = process.env.ZHIPU_API_KEY;
-const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+const API_KEY = process.env.VOLC_API_KEY;
+const API_URL = 'https://ark.cn-beijing.volces.com/api/v3/responses';
 
 export default async function handler(req, res) {
   // Enable CORS
@@ -21,8 +21,8 @@ export default async function handler(req, res) {
 
   // Check if API key is configured
   if (!API_KEY) {
-    console.error('ZHIPU_API_KEY is not configured');
-    return res.status(500).json({ message: 'API configuration error - ZHIPU_API_KEY not set' });
+    console.error('VOLC_API_KEY is not configured');
+    return res.status(500).json({ message: 'API configuration error - VOLC_API_KEY not set' });
   }
 
   // Parse request body
@@ -79,34 +79,48 @@ Constraints:
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'glm-4-plus', // GLM-4.7 latest model
-        messages: [
+        model: 'deepseek-v3-2-251201',
+        stream: false,
+        input: [
           {
             role: 'user',
-            content: prompt
+            content: [
+              {
+                type: 'input_text',
+                text: prompt
+              }
+            ]
           }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000
+        ]
       })
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Zhipu API Error:', response.status, errorText);
+      console.error('Volc API Error:', response.status, errorText);
       return res.status(500).json({
-        message: 'Zhipu API error',
+        message: 'Volc API error',
         status: response.status,
         error: errorText
       });
     }
 
     const data = await response.json();
-    const content = data.choices[0]?.message?.content || '';
+
+    // Extract content from Volc response format
+    let content = '';
+    if (data.choices && data.choices[0]?.message?.content) {
+      content = data.choices[0].message.content;
+    } else if (data.output?.choices && data.output.choices[0]?.message?.content) {
+      content = data.output.choices[0].message.content;
+    } else {
+      console.error('Unexpected Volc response format:', JSON.stringify(data).substring(0, 500));
+      return res.status(500).json({ message: 'Unexpected response format from Volc API' });
+    }
 
     // Clean up markdown code blocks if present
     const jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -115,17 +129,17 @@ Constraints:
     try {
       parsedData = JSON.parse(jsonStr);
     } catch (parseErr) {
-      console.error('Failed to parse Zhipu response JSON:', parseErr);
+      console.error('Failed to parse Volc response JSON:', parseErr);
       console.error('Response text:', content.substring(0, 500));
       return res.status(500).json({
-        message: 'Invalid response format from Zhipu API',
+        message: 'Invalid response format from Volc API',
         rawResponse: content.substring(0, 500)
       });
     }
 
     res.status(200).json(parsedData);
   } catch (error) {
-    console.error('Zhipu API Error:', error);
+    console.error('Volc API Error:', error);
     res.status(500).json({
       message: 'Error analyzing text',
       error: error.message,
