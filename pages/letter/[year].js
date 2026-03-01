@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
 import { Clock } from 'lucide-react';
 import Header from '@/components/Header';
@@ -6,8 +6,10 @@ import LetterViewer from '@/components/LetterViewer';
 import AnalysisPanel from '@/components/AnalysisPanel';
 import ReadingControls from '@/components/ReadingControls';
 import ReadingAnalytics from '@/components/ReadingAnalytics';
+import ResumeReadingBanner from '@/components/ResumeReadingBanner';
 import { getAllLetterIds, getLetterData, getArchiveStructure } from '@/lib/letters';
 import { calculateReadingTime } from '@/lib/textUtils';
+import { getProgress, saveProgress, clearProgress } from '@/lib/storage/readingProgressStorage';
 
 export default function LetterPage({ letterData, archiveData, theme, setTheme }) {
     const [analysis, setAnalysis] = useState(null);
@@ -16,6 +18,11 @@ export default function LetterPage({ letterData, archiveData, theme, setTheme })
     const [fontSize, setFontSize] = useState('text-lg');
     const [lineHeight, setLineHeight] = useState('leading-loose');
     const [readingMode, setReadingMode] = useState('normal');
+
+    // Reading progress state
+    const [savedProgress, setSavedProgress] = useState(null);
+    const [showResumeBanner, setShowResumeBanner] = useState(false);
+    const [dismissedResume, setDismissedResume] = useState(false);
 
     // Load preferences from localStorage
     useEffect(() => {
@@ -33,6 +40,47 @@ export default function LetterPage({ letterData, archiveData, theme, setTheme })
         localStorage.setItem('lineHeight', lineHeight);
         localStorage.setItem('readingMode', readingMode);
     }, [fontSize, lineHeight, readingMode]);
+
+    // Load saved reading progress
+    useEffect(() => {
+        const progress = getProgress(letterData.year);
+        if (progress && progress.percentage > 10 && progress.percentage < 95 && !dismissedResume) {
+            setSavedProgress(progress);
+            setShowResumeBanner(true);
+        }
+    }, [letterData.year, dismissedResume]);
+
+    // Handle scroll progress changes
+    const handleScrollChange = useCallback((year, scrollTop, scrollHeight, percentage) => {
+        saveProgress(year, scrollTop, scrollHeight, percentage);
+    }, []);
+
+    // Resume reading from saved position
+    const handleResume = () => {
+        setShowResumeBanner(false);
+        setDismissedResume(true);
+        // Scroll to saved position
+        if (savedProgress) {
+            setTimeout(() => {
+                const container = document.querySelector('.overflow-y-auto');
+                if (container) {
+                    const scrollHeight = container.scrollHeight - container.clientHeight;
+                    const scrollTop = (savedProgress.percentage / 100) * scrollHeight;
+                    container.scrollTo({ top: scrollTop, behavior: 'smooth' });
+                }
+            }, 100);
+        }
+    };
+
+    // Dismiss resume banner and start over
+    const handleDismiss = () => {
+        setShowResumeBanner(false);
+        setDismissedResume(true);
+        if (savedProgress) {
+            clearProgress(letterData.year);
+            setSavedProgress(null);
+        }
+    };
 
     const readingTime = calculateReadingTime(letterData.content);
 
@@ -157,6 +205,16 @@ export default function LetterPage({ letterData, archiveData, theme, setTheme })
                             />
                         </div>
 
+                        {/* Resume Reading Banner */}
+                        <div className="print:hidden">
+                            <ResumeReadingBanner
+                                percentage={savedProgress?.percentage || 0}
+                                onResume={handleResume}
+                                onDismiss={handleDismiss}
+                                show={showResumeBanner}
+                            />
+                        </div>
+
                         {/* Letter Content */}
                         <LetterViewer
                             content={letterData.content}
@@ -164,6 +222,9 @@ export default function LetterPage({ letterData, archiveData, theme, setTheme })
                             fontSize={fontSize}
                             lineHeight={lineHeight}
                             readingMode={readingMode}
+                            year={letterData.year}
+                            initialScrollPosition={savedProgress}
+                            onScrollChange={handleScrollChange}
                         />
                     </div>
                 </div>

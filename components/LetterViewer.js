@@ -1,12 +1,24 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Sparkles, ArrowUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatPDFText, isHeader, isTableRow } from '@/lib/textUtils';
+import ReadingProgressBar from './ReadingProgressBar';
 
-export default function LetterViewer({ content, onAnalyze, fontSize = 'text-lg', lineHeight = 'leading-loose', readingMode = 'normal' }) {
+export default function LetterViewer({
+    content,
+    onAnalyze,
+    fontSize = 'text-lg',
+    lineHeight = 'leading-loose',
+    readingMode = 'normal',
+    year,
+    initialScrollPosition = null,
+    onScrollChange = null
+}) {
     const [selection, setSelection] = useState(null);
     const [showScrollTop, setShowScrollTop] = useState(false);
+    const [scrollPercentage, setScrollPercentage] = useState(0);
     const containerRef = useRef(null);
+    const scrollTimeoutRef = useRef(null);
 
     // Format content into paragraphs
     const paragraphs = formatPDFText(content);
@@ -36,17 +48,61 @@ export default function LetterViewer({ content, onAnalyze, fontSize = 'text-lg',
         return () => document.removeEventListener('selectionchange', handleSelection);
     }, []);
 
-    // Scroll to top button visibility
+    // Scroll to top button visibility + progress tracking
     useEffect(() => {
         const handleScroll = () => {
-            const scrolled = containerRef.current?.scrollTop || 0;
-            setShowScrollTop(scrolled > 500);
+            const container = containerRef.current?.closest('.overflow-y-auto');
+            if (!container) return;
+
+            const scrollTop = container.scrollTop;
+            const scrollHeight = container.scrollHeight - container.clientHeight;
+            const percentage = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+
+            setShowScrollTop(scrollTop > 500);
+            setScrollPercentage(percentage);
+
+            // Throttled progress reporting (every 500ms)
+            if (onScrollChange && year) {
+                if (scrollTimeoutRef.current) {
+                    clearTimeout(scrollTimeoutRef.current);
+                }
+                scrollTimeoutRef.current = setTimeout(() => {
+                    onScrollChange(year, scrollTop, scrollHeight, percentage);
+                }, 500);
+            }
         };
 
         const container = containerRef.current?.closest('.overflow-y-auto');
-        container?.addEventListener('scroll', handleScroll);
-        return () => container?.removeEventListener('scroll', handleScroll);
-    }, []);
+        container?.addEventListener('scroll', handleScroll, { passive: true });
+
+        // Initial progress calculation
+        handleScroll();
+
+        return () => {
+            container?.removeEventListener('scroll', handleScroll);
+            if (scrollTimeoutRef.current) {
+                clearTimeout(scrollTimeoutRef.current);
+            }
+        };
+    }, [year, onScrollChange]);
+
+    // Restore scroll position on mount
+    useEffect(() => {
+        if (initialScrollPosition) {
+            const container = containerRef.current?.closest('.overflow-y-auto');
+            if (container) {
+                // Small delay to ensure content is rendered
+                setTimeout(() => {
+                    const scrollHeight = container.scrollHeight - container.clientHeight;
+                    const scrollTop = (initialScrollPosition.percentage / 100) * scrollHeight;
+                    container.scrollTo({
+                        top: scrollTop,
+                        behavior: 'smooth'
+                    });
+                }, 100);
+            }
+        }
+    }, [initialScrollPosition]);
 
     const handleAnalyzeClick = (e) => {
         e.stopPropagation();
@@ -79,6 +135,13 @@ export default function LetterViewer({ content, onAnalyze, fontSize = 'text-lg',
 
     return (
         <div className="relative print:text-base" ref={containerRef}>
+            {/* Reading Progress Bar */}
+            {year && (
+                <div className="sticky top-0 z-20 print:hidden">
+                    <ReadingProgressBar percentage={scrollPercentage} year={year} />
+                </div>
+            )}
+
             <div className={`font-serif ${fontSize} ${lineHeight} ${getTextColor()} print:text-black print:text-base print:leading-loose`}>
                 {paragraphs.map((para, idx) => {
                     // Detect headers

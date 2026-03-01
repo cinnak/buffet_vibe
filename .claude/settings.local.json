@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node:*)",
+      "Bash(npm install:*)",
+      "mcp__web-reader__webReader",
+      "Bash(npm:*)",
+      "Bash(curl:*)",
+      "Bash(do curl:*)",
+      "Bash(then cat:*)",
+      "mcp__zread__get_repo_structure",
+      "Bash(\"content\"::*)"
+    ]
+  }
+}
