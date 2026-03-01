@@ -112,11 +112,10 @@ Constraints:
     const data = await response.json();
 
     // Extract content from Volc response format
+    // Format: { output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "..." }] }] }
     let content = '';
-    if (data.choices && data.choices[0]?.message?.content) {
-      content = data.choices[0].message.content;
-    } else if (data.output?.choices && data.output.choices[0]?.message?.content) {
-      content = data.output.choices[0].message.content;
+    if (data.output?.[0]?.content?.[0]?.text) {
+      content = data.output[0].content[0].text;
     } else {
       console.error('Unexpected Volc response format:', JSON.stringify(data).substring(0, 500));
       return res.status(500).json({ message: 'Unexpected response format from Volc API' });
