@@ -3,8 +3,24 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export default async function handler(req, res) {
+  // Enable CORS for Vercel
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
+  }
+
+  // Check if API key is configured
+  if (!process.env.GEMINI_API_KEY) {
+    console.error('GEMINI_API_KEY is not configured');
+    return res.status(500).json({ message: 'API configuration error' });
   }
 
   // Ensure body is an object even if parsing fails (e.g., raw string)
@@ -74,12 +90,20 @@ export default async function handler(req, res) {
       data = JSON.parse(jsonStr);
     } catch (parseErr) {
       console.error('Failed to parse Gemini response JSON:', parseErr);
-      return res.status(500).json({ message: 'Invalid response format from Gemini API' });
+      console.error('Response text:', text.substring(0, 500));
+      return res.status(500).json({
+        message: 'Invalid response format from Gemini API',
+        rawResponse: text.substring(0, 500)
+      });
     }
 
     res.status(200).json(data);
   } catch (error) {
     console.error('Gemini API Error:', error);
-    res.status(500).json({ message: 'Error analyzing text', error: error.message });
+    res.status(500).json({
+      message: 'Error analyzing text',
+      error: error.message,
+      type: error.constructor.name
+    });
   }
 }
