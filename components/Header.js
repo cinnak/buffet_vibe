@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, Archive, ChevronDown, Bookmark } from 'lucide-react';
+import { BookOpen, Archive, ChevronDown, Bookmark, Search } from 'lucide-react';
 import ArchivePopover from './ArchivePopover';
 import ThemeToggle from './ThemeToggle';
 import SavedAnalysesModal from './SavedAnalysesModal';
+import SearchModal from './SearchModal';
 
 export default function Header({ archiveData, theme, setTheme }) {
     const [isArchiveOpen, setIsArchiveOpen] = useState(false);
     const [isSavedOpen, setIsSavedOpen] = useState(false);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
 
     return (
         <>
@@ -18,6 +20,16 @@ export default function Header({ archiveData, theme, setTheme }) {
                 </Link>
 
                 <div className="flex items-center gap-4">
+                    {/* Search Button */}
+                    <button
+                        onClick={() => setIsSearchOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+                        title="Search (Ctrl+K)"
+                    >
+                        <Search className="w-4 h-4" />
+                        <span>Search</span>
+                    </button>
+
                     <div className="relative">
                         <button
                             onClick={() => setIsArchiveOpen(!isArchiveOpen)}
@@ -57,6 +69,7 @@ export default function Header({ archiveData, theme, setTheme }) {
             </header>
 
             <SavedAnalysesModal isOpen={isSavedOpen} onClose={() => setIsSavedOpen(false)} />
+            <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
         </>
     );
 }

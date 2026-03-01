@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/router';
 import { Sparkles, ArrowUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatPDFText, isHeader, isTableRow } from '@/lib/textUtils';
@@ -12,8 +13,10 @@ export default function LetterViewer({
     readingMode = 'normal',
     year,
     initialScrollPosition = null,
-    onScrollChange = null
+    onScrollChange = null,
+    highlightTerm = null
 }) {
+    const router = useRouter();
     const [selection, setSelection] = useState(null);
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [scrollPercentage, setScrollPercentage] = useState(0);
@@ -104,6 +107,30 @@ export default function LetterViewer({
         }
     }, [initialScrollPosition]);
 
+    // Scroll to first highlighted match on mount
+    useEffect(() => {
+        if (highlightTerm) {
+            // Wait for content to be rendered
+            setTimeout(() => {
+                const mark = containerRef.current?.querySelector('mark');
+                if (mark) {
+                    mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 300);
+        }
+    }, [highlightTerm]);
+
+    // Highlight helper function
+    const highlightText = (text, term) => {
+        if (!term) return text;
+        try {
+            const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            return text.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">$1</mark>');
+        } catch {
+            return text;
+        }
+    };
+
     const handleAnalyzeClick = (e) => {
         e.stopPropagation();
         if (selection) {
@@ -144,11 +171,12 @@ export default function LetterViewer({
 
             <div className={`font-serif ${fontSize} ${lineHeight} ${getTextColor()} print:text-black print:text-base print:leading-loose`}>
                 {paragraphs.map((para, idx) => {
+                    const displayContent = highlightTerm ? highlightText(para, highlightTerm) : para;
+
                     // Detect headers
                     if (isHeader(para)) {
                         return (
-                            <h2 key={idx} className={`font-display text-2xl font-bold ${getHeaderColor()} mt-8 mb-4 print:text-xl print:text-black print:mt-6 print:mb-3`}>
-                                {para}
+                            <h2 key={idx} className={`font-display text-2xl font-bold ${getHeaderColor()} mt-8 mb-4 print:text-xl print:text-black print:mt-6 print:mb-3`} dangerouslySetInnerHTML={{ __html: displayContent }}>
                             </h2>
                         );
                     }
@@ -156,16 +184,14 @@ export default function LetterViewer({
                     // Detect table rows
                     if (isTableRow(para)) {
                         return (
-                            <div key={idx} className={`font-mono text-sm ${readingMode === 'sepia' ? 'bg-amber-100 dark:bg-amber-900' : 'bg-slate-50 dark:bg-slate-800'} p-2 rounded my-2 overflow-x-auto print:bg-gray-100 print:text-xs`}>
-                                {para}
+                            <div key={idx} className={`font-mono text-sm ${readingMode === 'sepia' ? 'bg-amber-100 dark:bg-amber-900' : 'bg-slate-50 dark:bg-slate-800'} p-2 rounded my-2 overflow-x-auto print:bg-gray-100 print:text-xs`} dangerouslySetInnerHTML={{ __html: displayContent }}>
                             </div>
                         );
                     }
 
                     // Regular paragraphs
                     return (
-                        <p key={idx} className="mb-6 text-justify print:mb-4">
-                            {para}
+                        <p key={idx} className="mb-6 text-justify print:mb-4" dangerouslySetInnerHTML={{ __html: displayContent }}>
                         </p>
                     );
                 })}

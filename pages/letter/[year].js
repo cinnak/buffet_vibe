@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { Clock } from 'lucide-react';
 import Header from '@/components/Header';
 import LetterViewer from '@/components/LetterViewer';
@@ -12,6 +13,7 @@ import { calculateReadingTime } from '@/lib/textUtils';
 import { getProgress, saveProgress, clearProgress } from '@/lib/storage/readingProgressStorage';
 
 export default function LetterPage({ letterData, archiveData, theme, setTheme }) {
+    const router = useRouter();
     const [analysis, setAnalysis] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -23,6 +25,9 @@ export default function LetterPage({ letterData, archiveData, theme, setTheme })
     const [savedProgress, setSavedProgress] = useState(null);
     const [showResumeBanner, setShowResumeBanner] = useState(false);
     const [dismissedResume, setDismissedResume] = useState(false);
+
+    // Get highlight term from URL query parameter
+    const highlightTerm = router.query.highlight || null;
 
     // Load preferences from localStorage
     useEffect(() => {
@@ -225,6 +230,7 @@ export default function LetterPage({ letterData, archiveData, theme, setTheme })
                             year={letterData.year}
                             initialScrollPosition={savedProgress}
                             onScrollChange={handleScrollChange}
+                            highlightTerm={highlightTerm}
                         />
                     </div>
                 </div>
