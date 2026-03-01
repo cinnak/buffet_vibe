@@ -83,7 +83,7 @@ Constraints:
         'Authorization': `Bearer ${API_KEY}`
       },
       body: JSON.stringify({
-        model: 'glm-4-flash', // Fast and cost-effective model
+        model: 'glm-4-plus', // GLM-4.7 latest model
         messages: [
           {
             role: 'user',
