@@ -96,13 +96,43 @@
   --color-border: var(--border-color);
 }
 
-* {
+/* Apply transitions only to meaningful elements, not all */
+body, div, p, h1, h2, h3, h4, h5, h6, span, a, button, input {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 body {
   background-color: var(--background);
   color: var(--text-primary);
+}
+
+/* Selection highlighting */
+::selection {
+  background-color: var(--gold-300);
+  color: var(--navy-950);
+}
+
+::-moz-selection {
+  background-color: var(--gold-300);
+  color: var(--navy-950);
+}
+
+[data-theme="dark"] ::selection {
+  background-color: var(--gold-500);
+  color: var(--navy-950);
+}
+
+[data-theme="dark"] ::-moz-selection {
+  background-color: var(--gold-500);
+  color: var(--navy-950);
+}
+
+/* Ensure text selection works properly */
+p, h1, h2, h3, h4, h5, h6, span, div, li, td, th {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
 }
 
 /* Utility Classes */

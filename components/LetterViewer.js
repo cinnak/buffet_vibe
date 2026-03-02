@@ -26,29 +26,48 @@ export default function LetterViewer({
     // Format content into paragraphs
     const paragraphs = formatPDFText(content);
 
+    // NOTE: selectionchange listener temporarily disabled for testing
+    // The listener was interfering with native text selection behavior
     useEffect(() => {
-        const handleSelection = () => {
-            const selectionObj = window.getSelection();
-            if (!selectionObj || selectionObj.isCollapsed) {
-                setSelection(null);
-                return;
-            }
+        const handleMouseUp = () => {
+            // Use mouseup instead of selectionchange to avoid interfering with selection
+            setTimeout(() => {
+                const selectionObj = window.getSelection();
+                if (!selectionObj || selectionObj.isCollapsed) {
+                    setSelection(null);
+                    return;
+                }
 
-            const text = selectionObj.toString().trim();
-            if (text.length < 5) return;
+                const text = selectionObj.toString().trim();
+                if (text.length < 5) {
+                    setSelection(null);
+                    return;
+                }
 
-            const range = selectionObj.getRangeAt(0);
-            const rect = range.getBoundingClientRect();
+                // Check if selection is within the letter content
+                const range = selectionObj.getRangeAt(0);
+                const container = containerRef.current;
+                if (!container || !container.contains(range.commonAncestorContainer)) {
+                    return;
+                }
 
-            setSelection({
-                text,
-                top: rect.top + window.scrollY - 50,
-                left: rect.left + rect.width / 2,
-            });
+                const rect = range.getBoundingClientRect();
+
+                setSelection({
+                    text,
+                    top: rect.top + window.scrollY - 50,
+                    left: rect.left + rect.width / 2,
+                });
+            }, 10);
         };
 
-        document.addEventListener('selectionchange', handleSelection);
-        return () => document.removeEventListener('selectionchange', handleSelection);
+        // Listen to mouseup on the container instead of selectionchange on document
+        const container = containerRef.current;
+        container?.addEventListener('mouseup', handleMouseUp);
+
+        return () => {
+            container?.removeEventListener('mouseup', handleMouseUp);
+        };
     }, []);
 
     // Scroll to top button visibility + progress tracking
